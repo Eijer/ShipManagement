@@ -5,11 +5,6 @@ import traceback
 import time
 import pymongo
 
-# 建立船舶类
-class Ships:
-    def  __init__(self, mmsi):
-        self.mmsi = str(mmsi)
-
 
 # 获取mmsi信息
 def search_mmsi(data_mmsi):
@@ -20,45 +15,24 @@ def search_mmsi(data_mmsi):
 
     # 通过正则拿到船舶mmsi
     if response.status_code == 200:
-            mmsi = mmsi + re.findall('"m":(.*?),', response.text)
+        mmsi = re.findall('"m":(.*?),', response.text)
     else:
         print('mmsi : ' + data_mmsi +' 请求错误')
         # print(traceback.format_exc())
     return mmsi
 
 
-# 读取seed.txt并写入数据库
-def load_mmsi(filename): # filename = 'seed.txt'
-    seed_file = xlrd.open_workbook(filename)
-    sheet = seed_file.sheet_by_name('Sheet1')
-    col_new = sheet.ncols
-    try:
-        mmsi_lists = sheet.col_values(col_new-1)    # 读取到的数据为float类型
-        mmsi_lists = [int(i) for i in mmsi_lists]   # 将列表元素转化为整型
-        for mmsi_list in mmsi_lists:
-            mmsi = mmsi + search_mmsi(mmsi_lists[col_new-1])
-            time.sleep(0.5) # 每0.5秒执行一次
-
-    except:
-        print(traceback.format_exc())
-
-    try:
-        mmsi = list(set(mmsi))
-        write_excel_xls_append(filename, mmsi)
-    except:
-        print(traceback.format_exc())
-
-# 将mmsi.txt存入数据库
-def write_into_mongo():
+# 将mmsi.txt存入数据库 参数依次为数据库名，集合名，mmsi文件名
+def write_into_mongo(client,data_base,mmsi_name):
     myclient = pymongo.MongoClient("mongodb://localhost:27017/")
-    mydb = myclient["ShipsManage"]
-    mycol = mydb["ships"]
-    mmsi_file = open("mmsi.txt",'rw')
+    mydb = myclient[client]
+    mycol = mydb[data_base]
+    mmsi_file = open(mmsi_name,'r')
     context = mmsi_file.readlines() # 读取mmsi.txt文件
 
     # 插入mmsi 如果不存在则插入，若已存在则无操作
     for line in context:
-        document = {'mmsi' : str(line)}
+        document = {'mmsi' : line.strip('\n')}
         mycol.update_many(
             document,
             {'$setOnInsert': document},
@@ -68,35 +42,43 @@ def write_into_mongo():
 
 
 
+# 主函数	参数1为种子文件名，参数2为mmsi文件名
+def collect_mmsi(seed_name,mmsi_name):
+	mmsi = []
+	seed_file = open(seed_name,'r')
+	context = seed_file.readlines() # 读取seed.txt文件
+	seed_file.close()
 
-mmsi = []
-seed_file = open('seed.txt')
-mmsi_file = open("mmsi.txt",'a')
-context = seed_file.readlines() # 读取seed.txt文件
-index = context[0]              # seed.txt文件的第一行记录已爬取次数
-for line in context[1:]:
-    line = line.strip()
-    # search_mmsi(line)         # 获取相似mmsi序列
-index = index + 1               # 爬取次数+1
-mmsi = list(set(mmsi))          # 对列表去重
+	index = int(context[0])              # seed.txt文件的第一行记录已爬取次数
+	for line in context[1:]:
+	    line = line.strip()
+	    mmsi = mmsi + search_mmsi(line)         # 获取相似mmsi序列
+	    time.sleep(1) # 每秒执行一次
+	index = index + 1               # 爬取次数+1
+	mmsi = list(set(mmsi))          # 对列表去重
 
-#将新的mmsi列表覆盖至seed.txt
-del(context[0])
-seed_file.write(str(index) + '\n')
-for line in mmsi:
-    seed_file.write(line + '\n')
-seed_file.close()
+	#将新的mmsi列表覆盖至seed.txt
+	del(context[0])
+	seed_file = open(seed_name,'w')
+	seed_file.write(str(index) + '\n')
+	for line in mmsi:
+	    seed_file.write(line + '\n')
+	seed_file.close()
 
-mmsi = mmsi + context
-mmsi = list(set(mmsi))          # 对列表去重
+	mmsi_file = open(mmsi_name,'a')
+	mmsi = mmsi + context
+	mmsi = list(set(mmsi))          # 对列表去重
+	for line in mmsi:
+	    line = line.strip()
+	    mmsi_file.write(line + '\n')
+	mmsi_file.close()
 
-for line in mmsi:
-    mmsi_file.write(line + '\n')
-mmsi_file.close()
+	# 每爬取3次数据，将数据存入库中 
+	if (index % 3 == 0):
+	    write_into_mongo("ShipsManage","ships","mmsi.txt")
+	    # 清空文件
+	    mmsi_file = open(mmsi_name,'w')
+	    mmsi_file.close()
 
-# 每爬取3次数据，将数据存入库中 
-if (index % 3 == 0):
-    write_into_mongo()
-    # 清空文件
-    mmsi_file = open('mmsi.txt','w')
-    mmsi_file.close()
+
+collect_mmsi("seed.txt","mmsi.txt")
