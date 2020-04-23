@@ -4,12 +4,24 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: https://doc.scrapy.org/en/latest/topics/item-pipeline.html
+import pymongo
+from scrapy.conf import settings
 
 
 class ShipsmanagementsystemPipeline(object):
     def __init__(self):
         self.shipType = '其他类型船舶'
         self.navistatus = '未知'
+
+        host = settings["MONGODB_HOST"]
+        port = settings["MONGODB_PORT"]
+        dbname = settings["MONGODB_DBNAME"]
+        sheetname = settings["MONGODB_SHEETNAME"]
+        myclient = pymongo.MongoClient(host=host, port=port)    # 创建数据库链接
+        mydb = myclient[dbname]         # 指定数据库
+        self.post = mydb[sheetname]         # 指定表名
+
+
     def process_item(self, item, spider):
         if item['shipType']:
             if item['shipType']=='80' or item['shipType']=='85':
@@ -54,5 +66,9 @@ class ShipsmanagementsystemPipeline(object):
                 item['navistatus']= self.navistatus
         else:
             item['navistatus']= self.navistatus
+
+        # 将数据插入库中
+        data = dict(item)
+        self.post.insert(data)
 
         return item

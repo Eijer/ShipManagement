@@ -64,9 +64,9 @@ ROBOTSTXT_OBEY = True
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'ShipsManagementSystem.pipelines.ShipsmanagementsystemPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'ShipsManagementSystem.pipelines.ShipsmanagementsystemPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -88,3 +88,13 @@ ROBOTSTXT_OBEY = True
 #HTTPCACHE_DIR = 'httpcache'
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
+
+
+# MONGODB 主机名
+MONGODB_HOST = "127.0.0.1"
+# MONGODB 端口号
+MONGODB_PORT = 27017
+# 数据库名称
+MONGODB_DBNAME = "ShipDemo"
+# 存放数据的表名称
+MONGODB_SHEETNAME = "ships"
