@@ -10,9 +10,10 @@ from scrapy.conf import settings
 
 class ShipsmanagementsystemPipeline(object):
     def __init__(self):
+        # 船舶数据处理
         self.shipType = '其他类型船舶'
         self.navistatus = '未知'
-
+        #数据库相关信息
         host = settings["MONGODB_HOST"]
         port = settings["MONGODB_PORT"]
         dbname = settings["MONGODB_DBNAME"]
@@ -20,6 +21,8 @@ class ShipsmanagementsystemPipeline(object):
         myclient = pymongo.MongoClient(host=host, port=port)    # 创建数据库链接
         mydb = myclient[dbname]         # 指定数据库
         self.post = mydb[sheetname]         # 指定表名
+        #去重设置
+        self.mmsi_set = set()
 
 
     def process_item(self, item, spider):
@@ -72,3 +75,12 @@ class ShipsmanagementsystemPipeline(object):
         self.post.insert(data)
 
         return item
+
+    def process_item(self,item,spider):
+        mmsi = item['mmsi']
+        if mmsi in self.mmsi_set:
+            raise DropItem("mmsi found:%s" % item)
+
+        self.mmsi_set.add(mmsi)
+        return item
+
