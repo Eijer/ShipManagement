@@ -4,6 +4,7 @@ import parsel
 import traceback
 import time
 import pymongo
+import random
 
 
 # 获取mmsi信息
@@ -22,7 +23,7 @@ def search_mmsi(data_mmsi):
     return mmsi
 
 
-# 将mmsi.txt存入数据库 参数依次为数据库名，集合名，mmsi文件名
+# 将mmsi.txt存入数据库
 def write_into_mongo(client,data_base,mmsi_name):
     myclient = pymongo.MongoClient("mongodb://localhost:27017/")
     mydb = myclient[client]
@@ -53,7 +54,7 @@ def collect_mmsi(seed_name,mmsi_name):
 	for line in context[1:]:
 	    line = line.strip()
 	    mmsi = mmsi + search_mmsi(line)         # 获取相似mmsi序列
-	    time.sleep(1) # 每秒执行一次
+	    time.sleep(random.randint(1,3)) # 每秒执行一次
 	index = index + 1               # 爬取次数+1
 	mmsi = list(set(mmsi))          # 对列表去重
 
@@ -74,11 +75,12 @@ def collect_mmsi(seed_name,mmsi_name):
 	mmsi_file.close()
 
 	# 每爬取3次数据，将数据存入库中 
-	if (index % 3 == 0):
-	    write_into_mongo("ShipsManage","ships","mmsi.txt")
-	    # 清空文件
-	    mmsi_file = open(mmsi_name,'w')
-	    mmsi_file.close()
+	#if (index % 3 == 0):
+	#    write_into_mongo("ShipsManage","test2","test2.txt")
+	#    # 清空文件
+	#    mmsi_file = open(mmsi_name,'w')
+	#    mmsi_file.close()
 
 
 collect_mmsi("seed.txt","mmsi.txt")
+# collect_mmsi("test.txt","test2.txt")
