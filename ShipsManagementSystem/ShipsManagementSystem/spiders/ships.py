@@ -3,7 +3,7 @@ import scrapy
 import requests
 import re
 import json
-import time
+import time,random
 import urllib.parse
 from ShipsManagementSystem.items import ShipsmanagementsystemItem
 from scrapy.http import Request
@@ -37,7 +37,7 @@ def searchShip(mmsi,option):
 
 # 把mmsi.txt的信息拼接到url中
 def loadMmsi():
-    mmsiFile = open('../../../GetMMSI/mmsi.txt','r')
+    mmsiFile = open('../GetMMSI/mmsi.txt','r')
     context = mmsiFile.readlines()
     urls = []
     for element in context:
